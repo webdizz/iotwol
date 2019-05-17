@@ -58,8 +58,6 @@ bool loadConfig()
     wol.mask = mask;
   }
 
-  wol.mac = mac;
-
   return true;
 }
 

@@ -9,7 +9,6 @@ struct WOL
 {
     IPAddress mask;
     IPAddress ip;
-    byte *mac;
 };
 
 // TODO: need to pul this to config.json
