@@ -12,8 +12,8 @@
 
 boolean wifiConnected = false;
 
-const char *ssid;
-const char *passwd;
+struct WiFiConnection wiFiConnection;
+struct WOL wol;
 
 WiFiUDP UDP;
 
@@ -43,13 +43,23 @@ bool loadConfig()
   }
 
   // Copy values from the JSON document
-  ssid = json["wifi"]["ssid"];
-  passwd = json["wifi"]["passwd"];
+  wiFiConnection.ssid = json["wifi"]["ssid"].as<char *>();
+  wiFiConnection.password = json["wifi"]["password"].as<char *>();
 
-  Serial.print("Loaded SSID: ");
-  Serial.println(ssid);
-  Serial.print("Loaded passwd: ");
-  Serial.println(passwd);
+  IPAddress ip;
+  if (ip.fromString(json["wol"]["ip"].as<char *>()))
+  {
+    wol.ip = ip;
+  }
+
+  IPAddress mask;
+  if (mask.fromString(json["wol"]["mask"].as<char *>()))
+  {
+    wol.mask = mask;
+  }
+
+  wol.mac = mac;
+
   return true;
 }
 
@@ -63,6 +73,7 @@ void setup()
     return;
   }
 
+  delay(500);
   if (!loadConfig())
   {
     Serial.println("Failed to load config");
@@ -75,9 +86,11 @@ void setup()
   // Initialise wifi connection
   wifiConnected = connectWifi();
 
-  wakeTicker.start();
   //start UDP client, not sure if really necessary.
   UDP.begin(9);
+
+  delay(500);
+  wakeTicker.start();
 }
 
 void loop()
@@ -90,7 +103,7 @@ boolean connectWifi()
 {
   boolean state = true;
   int i = 0;
-  WiFi.begin(ssid, passwd);
+  WiFi.begin(wiFiConnection.ssid, wiFiConnection.password);
   Serial.println("");
   Serial.println("Connecting to WiFi");
 
@@ -110,8 +123,8 @@ boolean connectWifi()
   if (state)
   {
     Serial.println("");
-    Serial.print("Connected to ");
-    Serial.println(ssid);
+    Serial.print("Connected to: ");
+    Serial.println(wiFiConnection.ssid);
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
   }
@@ -127,7 +140,7 @@ void wakeOnLan()
 {
   if (wifiConnected)
   {
-    bool is_ip_online = Ping.ping(ip);
+    bool is_ip_online = Ping.ping(wol.ip);
     if (is_ip_online)
     {
       Serial.println("Waked up, IP is online.");
@@ -135,7 +148,7 @@ void wakeOnLan()
     else
     {
       Serial.println("Sending WOL Packet...");
-      WakeOnLan::sendWOL(networkMask, UDP, mac, sizeof mac);
+      WakeOnLan::sendWOL(wol.mask, UDP, mac, sizeof mac);
     }
   }
 }
