@@ -8,12 +8,13 @@
 #include <ESP8266Ping.h>
 
 #include "FS.h"
-#include <ArduinoJson.h>
 
 boolean wifiConnected = false;
 
 struct WiFiConnection wiFiConnection;
 struct WOL wol;
+// TODO: need to pul this to config.json
+byte mac_address[] = {0xE0, 0xD5, 0x5E, 0x2A, 0x50, 0x38};
 
 WiFiUDP UDP;
 
@@ -23,43 +24,6 @@ void sendWOL();
 void wakeOnLan();
 
 Ticker wakeTicker(wakeOnLan, 5000);
-
-bool loadConfig()
-{
-  const char *filename = "/config.json";
-  File configFile = SPIFFS.open(filename, "r");
-  if (!configFile)
-  {
-    Serial.println("Failed to open config file");
-    return false;
-  }
-
-  // Deserialize the JSON document
-  StaticJsonDocument<512> json;
-  DeserializationError error = deserializeJson(json, configFile);
-  if (error)
-  {
-    Serial.println(F("Failed to read file, using default configuration"));
-  }
-
-  // Copy values from the JSON document
-  wiFiConnection.ssid = json["wifi"]["ssid"].as<char *>();
-  wiFiConnection.password = json["wifi"]["password"].as<char *>();
-
-  IPAddress ip;
-  if (ip.fromString(json["wol"]["ip"].as<char *>()))
-  {
-    wol.ip = ip;
-  }
-
-  IPAddress mask;
-  if (mask.fromString(json["wol"]["mask"].as<char *>()))
-  {
-    wol.mask = mask;
-  }
-
-  return true;
-}
 
 void setup()
 {
@@ -72,7 +36,7 @@ void setup()
   }
 
   delay(500);
-  if (!loadConfig())
+  if (!loadConfig(wiFiConnection, wol))
   {
     Serial.println("Failed to load config");
   }
@@ -146,7 +110,7 @@ void wakeOnLan()
     else
     {
       Serial.println("Sending WOL Packet...");
-      WakeOnLan::sendWOL(wol.mask, UDP, mac, sizeof mac);
+      WakeOnLan::sendWOL(wol.mask, UDP, mac_address, sizeof(mac_address));
     }
   }
 }

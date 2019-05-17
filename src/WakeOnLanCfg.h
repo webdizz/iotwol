@@ -1,3 +1,5 @@
+#include <ArduinoJson.h>
+#include <ESP8266WiFi.h>
 
 struct WiFiConnection
 {
@@ -11,5 +13,4 @@ struct WOL
     IPAddress ip;
 };
 
-// TODO: need to pul this to config.json
-byte mac[] = {0xE0, 0xD5, 0x5E, 0x2A, 0x50, 0x38};
+bool loadConfig(WiFiConnection &wiFiConnection, WOL &wol);
