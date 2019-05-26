@@ -9,12 +9,16 @@
 
 #include "FS.h"
 
+#include <ESP8266WebServerSecure.h>
+#include <WakeOnLanTLS.h>
+
 boolean wifiConnected = false;
 
 struct WiFiConnection wiFiConnection;
 struct WOL wol;
-// TODO: need to pul this to config.json
-byte mac_address[] = {0xE0, 0xD5, 0x5E, 0x2A, 0x50, 0x38};
+
+BearSSL::ESP8266WebServerSecure secureServer(443);
+ESP8266WebServer server(80);
 
 WiFiUDP UDP;
 
@@ -22,6 +26,7 @@ WiFiUDP UDP;
 boolean connectWifi();
 void sendWOL();
 void wakeOnLan();
+void startSecureServer();
 
 Ticker wakeTicker(wakeOnLan, 5000);
 
@@ -53,11 +58,14 @@ void setup()
 
   delay(500);
   wakeTicker.start();
+
+  startSecureServer();
 }
 
 void loop()
 {
-  wakeTicker.update();
+  // wakeTicker.update();
+  secureServer.handleClient();
 }
 
 // connect to wifi – returns true if successful or false if not
@@ -113,4 +121,19 @@ void wakeOnLan()
       WakeOnLan::sendWOL(wol.mask, UDP, mac_address, sizeof(mac_address));
     }
   }
+}
+
+void startSecureServer()
+{
+  BearSSL::X509List *serverCertList = new BearSSL::X509List(serverCert);
+  BearSSL::PrivateKey *serverPrivKey = new BearSSL::PrivateKey(serverKey);
+  secureServer.setRSACert(serverCertList, serverPrivKey);
+
+  secureServer.on("/wake", HTTP_POST, []() {
+    secureServer.send(200, "text/plain", "Please wake up!");
+    wakeOnLan();
+  });
+
+  secureServer.begin();
+  Serial.println("HTTPS server started");
 }
