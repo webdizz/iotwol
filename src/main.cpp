@@ -3,8 +3,6 @@
 #include <WakeOnLan.h>
 #include <WakeOnLanCfg.h>
 
-#include <Ticker.h>
-
 #include <ESP8266Ping.h>
 
 #include "FS.h"
@@ -18,7 +16,6 @@ struct WiFiConnection wiFiConnection;
 struct WOL wol;
 
 BearSSL::ESP8266WebServerSecure secureServer(443);
-ESP8266WebServer server(80);
 
 WiFiUDP UDP;
 
@@ -27,8 +24,6 @@ boolean connectWifi();
 void sendWOL();
 void wakeOnLan();
 void startSecureServer();
-
-Ticker wakeTicker(wakeOnLan, 5000);
 
 void setup()
 {
@@ -57,14 +52,12 @@ void setup()
   UDP.begin(9);
 
   delay(500);
-  wakeTicker.start();
 
   startSecureServer();
 }
 
 void loop()
 {
-  // wakeTicker.update();
   secureServer.handleClient();
 }
 
