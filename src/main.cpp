@@ -22,7 +22,7 @@ WiFiUDP UDP;
 //empty methods defined here, for declaration see lower.
 boolean connectWifi();
 void sendWOL();
-void wakeOnLan();
+String wakeOnLan();
 void startSecureServer();
 
 void setup()
@@ -99,20 +99,25 @@ boolean connectWifi()
   return state;
 }
 
-void wakeOnLan()
+String wakeOnLan()
 {
   if (wifiConnected)
   {
     bool is_ip_online = Ping.ping(wol.ip);
     if (is_ip_online)
     {
-      Serial.println("Waked up, IP is online.");
+      return "Waked up, IP is online.";
     }
     else
     {
       Serial.println("Sending WOL Packet...");
       WakeOnLan::sendWOL(wol.mask, UDP, mac_address, sizeof(mac_address));
+      return "Is about to wake up.";
     }
+  }
+  else
+  {
+    return "WiFi is not connected";
   }
 }
 
@@ -123,8 +128,8 @@ void startSecureServer()
   secureServer.setRSACert(serverCertList, serverPrivKey);
 
   secureServer.on("/wake", HTTP_POST, []() {
-    secureServer.send(200, "text/plain", "Please wake up!");
-    wakeOnLan();
+    String message = wakeOnLan();
+    secureServer.send(200, "text/plain", message);
   });
 
   secureServer.begin();
